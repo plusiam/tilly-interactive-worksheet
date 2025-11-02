@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>그림책 틸리 - 인터랙티브 학습지</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        @media print {
+            body {
+                background: white;
+            }
+            button {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+        const { ChevronRight, ChevronLeft, Download, RefreshCw, Save } = lucide;
+
+        const TillyWorksheet = () => {
+          const [currentStep, setCurrentStep] = useState(0);
+          const [answers, setAnswers] = useState({
+            myWalls: ['', '', ''],
+            friendWalls: '',
+            wallValues: ['', '', ''],
+            courageDefinition: '',
+            tillyMethods: ['', '', ''],
+            myPractice: ''
+          });
+          
+          const canvasRef = useRef(null);
+          const [isDrawing, setIsDrawing] = useState(false);
+          const [drawingData, setDrawingData] = useState(null);
+
+          const steps = [
+            { title: "시작하기", subtitle: "그림책 '틸리'와 함께하는 용기 찾기" },
+            { title: "1단계: 나의 벽 찾기", subtitle: "어려운 일이나 두려운 일을 생각해봐요" },
+            { title: "2단계: 친구와 나누기", subtitle: "친구에게 물어보고 함께 생각해봐요" },
+            { title: "3단계: 벽에 가치 새기기", subtitle: "벽을 그리고 나만의 가치를 적어봐요" },
+            { title: "4단계: 용기란?", subtitle: "틸리에게 배우는 용기의 의미" },
+            { title: "5단계: 틸리의 방법", subtitle: "틸리는 어떻게 벽을 넘었을까요?" },
+            { title: "6단계: 나의 실천", subtitle: "나는 어떻게 용기를 낼 수 있을까요?" },
+            { title: "완료!", subtitle: "잘 했어요! 결과를 저장하세요" }
+          ];
+
+          // Canvas drawing functions
+          useEffect(() => {
+            const canvas = canvasRef.current;
+            if (canvas && currentStep === 3) {
+              const ctx = canvas.getContext('2d');
+              ctx.strokeStyle = '#4f46e5';
+              ctx.lineWidth = 3;
+              ctx.lineCap = 'round';
+              
+              if (drawingData) {
+                const img = new Image();
+                img.onload = () => ctx.drawImage(img, 0, 0);
+                img.src = drawingData;
+              }
+            }
+          }, [currentStep, drawingData]);
+
+          const startDrawing = (e) => {
+            const canvas = canvasRef.current;
+            const rect = canvas.getBoundingClientRect();
+            const ctx = canvas.getContext('2d');
+            
+            setIsDrawing(true);
+            ctx.beginPath();
+            ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+          };
+
+          const draw = (e) => {
+            if (!isDrawing) return;
+            
+            const canvas = canvasRef.current;
+            const rect = canvas.getBoundingClientRect();
+            const ctx = canvas.getContext('2d');
+            
+            ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+            ctx.stroke();
+          };
+
+          const stopDrawing = () => {
+            setIsDrawing(false);
+            if (canvasRef.current) {
+              setDrawingData(canvasRef.current.toDataURL());
+            }
+          };
+
+          const clearCanvas = () => {
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            setDrawingData(null);
+          };
+
+          const handleInputChange = (field, value, index = null) => {
+            if (index !== null) {
+              const newArray = [...answers[field]];
+              newArray[index] = value;
+              setAnswers({ ...answers, [field]: newArray });
+            } else {
+              setAnswers({ ...answers, [field]: value });
+            }
+          };
+
+          const saveToLocalStorage = () => {
+            localStorage.setItem('tillyWorksheet', JSON.stringify({ answers, drawingData }));
+            alert('저장되었습니다! 나중에 다시 불러올 수 있어요.');
+          };
+
+          const loadFromLocalStorage = () => {
+            const saved = localStorage.getItem('tillyWorksheet');
+            if (saved) {
+              const data = JSON.parse(saved);
+              setAnswers(data.answers);
+              setDrawingData(data.drawingData);
+              alert('저장된 내용을 불러왔습니다!');
+            } else {
+              alert('저장된 내용이 없습니다.');
+            }
+          };
+
+          const renderStepContent = () => {
+            switch(currentStep) {
+              case 0:
+                return (
+                  <div className="text-center py-12">
+                    <div className="mb-8">
+                      <div className="text-6xl mb-4">📚</div>
+                      <h1 className="text-4xl font-bold text-indigo-600 mb-2">그림책 '틸리'</h1>
+                      <p className="text-xl text-gray-600">용기를 배우는 인터랙티브 학습지</p>
+                    </div>
+                    <div className="max-w-2xl mx-auto text-left bg-blue-50 p-6 rounded-lg mb-8">
+                      <h3 className="font-bold text-lg mb-3">이 활동에서는...</h3>
+                      <ul className="space-y-2 text-gray-700">
+                        <li>✨ 나만의 벽(어려움)을 찾아봅니다</li>
+                        <li>🤝 친구와 함께 이야기를 나눕니다</li>
+                        <li>🎨 나만의 벽을 그리고 가치를 적습니다</li>
+                        <li>💪 틸리에게 용기를 배웁니다</li>
+                        <li>🌟 나만의 실천 방법을 찾습니다</li>
+                      </ul>
+                    </div>
+                    <button 
+                      onClick={() => setCurrentStep(1)}
+                      className="bg-indigo-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-indigo-700 transition"
+                    >
+                      시작하기 →
+                    </button>
+                  </div>
+                );
+
+              case 1:
+                return (
+                  <div className="space-y-6">
+                    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                      <p className="text-yellow-800 font-medium">
+                        💡 어려운 일이나 두려운 일을 '벽'이라고 생각해봐요. 
+                        발표가 부담되거나 친구에게 먼저 다가가기 어려운 마음, 실수를 두려워하는 마음들이 '벽'이 될 수 있어요.
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <h3 className="font-bold text-lg text-gray-800">내가 만난 '벽' 세 가지를 적어봐요</h3>
+                      {[0, 1, 2].map((idx) => (
+                        <div key={idx} className="flex items-center gap-3">
+                          <span className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                            {idx + 1}
+                          </span>
+                          <input
+                            type="text"
+                            value={answers.myWalls[idx]}
+                            onChange={(e) => handleInputChange('myWalls', e.target.value, idx)}
+                            placeholder={idx === 0 ? "예: 발표를 할 때 떨려요" : ""}
+                            className="flex-1 p-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="bg-blue-50 p-4 rounded-lg mt-6">
+                      <p className="text-sm text-blue-800">
+                        💭 <strong>생각해보기:</strong> 왜 이것들이 벽처럼 느껴질까요? 벽을 넘으면 어떤 일이 일어날까요?
+                      </p>
+                    </div>
+                  </div>
+                );
+
+              case 2:
+                return (
+                  <div className="space-y-6">
+                    <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
+                      <p className="text-green-800 font-medium">
+                        🤝 혼자서만 생각하지 말고, 친구에게도 물어봐요. 
+                        서로의 벽을 나누면 함께 넘을 수 있는 용기가 생겨요!
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="font-bold text-lg text-gray-800">친구에게 물어본 내용</h3>
+                      <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+                        <p className="text-sm text-gray-600 mb-2">
+                          "너는 어떤 벽이 있어?" 라고 물어보고 친구의 이야기를 들어봐요
+                        </p>
+                        <textarea
+                          value={answers.friendWalls}
+                          onChange={(e) => handleInputChange('friendWalls', e.target.value)}
+                          placeholder="친구가 말한 벽을 적어봐요..."
+                          className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none min-h-[120px]"
+                        />
+                      </div>
+
+                      <div className="bg-purple-50 p-4 rounded-lg">
+                        <h4 className="font-bold text-purple-900 mb-2">함께 생각하기</h4>
+                        <ul className="space-y-2 text-sm text-purple-800">
+                          <li>• 친구와 나는 비슷한 벽이 있나요?</li>
+                          <li>• 친구의 벽을 들으니 어떤 생각이 드나요?</li>
+                          <li>• 서로 도와줄 수 있는 방법이 있을까요?</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                );
+
+              case 3:
+                return (
+                  <div className="space-y-6">
+                    <div className="bg-orange-50 border-l-4 border-orange-400 p-4 mb-6">
+                      <p className="text-orange-800 font-medium">
+                        🎨 나만의 벽을 그려봐요. 그리고 그 벽 위에 나에게 중요한 가치들을 적어봐요.
+                        '용기', '실천', '성실' 같은 단어들을 벽 위에 새겨보세요!
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="font-bold text-lg text-gray-800">벽을 그려봐요</h3>
+                        <button
+                          onClick={clearCanvas}
+                          className="flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+                        >
+                          <lucide.RefreshCw size={16} />
+                          다시 그리기
+                        </button>
+                      </div>
+                      
+                      <canvas
+                        ref={canvasRef}
+                        width={600}
+                        height={300}
+                        onMouseDown={startDrawing}
+                        onMouseMove={draw}
+                        onMouseUp={stopDrawing}
+                        onMouseLeave={stopDrawing}
+                        className="w-full border-4 border-indigo-300 rounded-lg cursor-crosshair bg-white"
+                        style={{ touchAction: 'none' }}
+                      />
+                      <p className="text-sm text-gray-600">💡 마우스로 드래그하여 벽을 그려보세요</p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="font-bold text-lg text-gray-800">벽 위에 새길 나의 가치 세 가지</h3>
+                      {[0, 1, 2].map((idx) => (
+                        <div key={idx} className="flex items-center gap-3">
+                          <span className="bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                            {idx + 1}
+                          </span>
+                          <input
+                            type="text"
+                            value={answers.wallValues[idx]}
+                            onChange={(e) => handleInputChange('wallValues', e.target.value, idx)}
+                            placeholder={idx === 0 ? "예: 용기" : idx === 1 ? "예: 실천" : "예: 성실"}
+                            className="flex-1 p-3 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:outline-none"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+
+              case 4:
+                return (
+                  <div className="space-y-6">
+                    <div className="bg-pink-50 border-l-4 border-pink-400 p-4 mb-6">
+                      <p className="text-pink-800 font-medium">
+                        💪 틸리는 벽을 넘기 위해 여러 방법을 시도했어요. 
+                        틸리의 그 행동이 바로 '용기'예요. 용기란 무엇일까요?
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="font-bold text-lg text-gray-800">
+                        나에게 용기란?
+                      </h3>
+                      <textarea
+                        value={answers.courageDefinition}
+                        onChange={(e) => handleInputChange('courageDefinition', e.target.value)}
+                        placeholder="용기가 무엇인지 자유롭게 적어봐요..."
+                        className="w-full p-4 border-2 border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none min-h-[150px] text-lg"
+                      />
+
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="bg-pink-50 p-4 rounded-lg">
+                          <h4 className="font-bold text-pink-900 mb-2">💭 생각해볼 질문</h4>
+                          <ul className="space-y-1 text-sm text-pink-800">
+                            <li>• 용기는 두려움이 없는 것일까요?</li>
+                            <li>• 틸리의 용기는 어디서 나왔을까요?</li>
+                          </ul>
+                        </div>
+                        <div className="bg-purple-50 p-4 rounded-lg">
+                          <h4 className="font-bold text-purple-900 mb-2">✨ 힌트</h4>
+                          <p className="text-sm text-purple-800">
+                            용기는 두려움을 느끼면서도 한 걸음씩 나아가는 것일 수 있어요.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+
+              case 5:
+                return (
+                  <div className="space-y-6">
+                    <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                      <p className="text-blue-800 font-medium">
+                        🔍 틸리는 벽을 넘기 위해 여러 시도를 했어요. 
+                        시도하기 → 새 방법 찾기 → 다시 실천! 이 과정을 반복했죠.
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="font-bold text-lg text-gray-800">틸리가 벽을 넘은 방법 세 가지</h3>
+                      <p className="text-sm text-gray-600">그림책을 다시 떠올려보며 적어봐요</p>
+                      
+                      {[0, 1, 2].map((idx) => (
+                        <div key={idx} className="bg-white p-4 rounded-lg border-2 border-gray-200">
+                          <label className="block font-semibold text-gray-700 mb-2">
+                            방법 {idx + 1}
+                          </label>
+                          <textarea
+                            value={answers.tillyMethods[idx]}
+                            onChange={(e) => handleInputChange('tillyMethods', e.target.value, idx)}
+                            placeholder={
+                              idx === 0 ? "예: 처음 시도에 돌을 옮겼어요" : 
+                              idx === 1 ? "예: 새 방법을 생각해냈어요" : 
+                              "예: 포기하지 않고 계속 시도했어요"
+                            }
+                            className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none min-h-[80px]"
+                          />
+                        </div>
+                      ))}
+
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <p className="text-sm text-green-800">
+                          <strong>✨ 핵심:</strong> 틸리의 구체적 행동을 통해 '용기'와 '실천'의 과정을 스스로 깨닫게 합니다.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+
+              case 6:
+                return (
+                  <div className="space-y-6">
+                    <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
+                      <p className="text-green-800 font-medium">
+                        🌟 이제 나의 벽을 넘기 위해 무엇을 할 수 있을지 생각해봐요.
+                        작은 것부터 시작해도 좋아요!
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="font-bold text-lg text-gray-800">
+                        나는 나의 벽이 있을 때 무엇을 실천할까요?
+                      </h3>
+                      <textarea
+                        value={answers.myPractice}
+                        onChange={(e) => handleInputChange('myPractice', e.target.value)}
+                        placeholder="구체적으로 실천할 방법을 적어봐요..."
+                        className="w-full p-4 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:outline-none min-h-[150px] text-lg"
+                      />
+
+                      <div className="space-y-3">
+                        <h4 className="font-bold text-gray-800">💡 실천 아이디어</h4>
+                        <div className="grid md:grid-cols-2 gap-3">
+                          <div className="bg-blue-50 p-3 rounded-lg text-sm">
+                            <strong className="text-blue-900">1단계:</strong>
+                            <p className="text-blue-800">작은 것부터 시도하기 (예: 먼저 인사하기)</p>
+                          </div>
+                          <div className="bg-purple-50 p-3 rounded-lg text-sm">
+                            <strong className="text-purple-900">2단계:</strong>
+                            <p className="text-purple-800">도움 요청하기 (예: 선생님, 부모님께)</p>
+                          </div>
+                          <div className="bg-pink-50 p-3 rounded-lg text-sm">
+                            <strong className="text-pink-900">3단계:</strong>
+                            <p className="text-pink-800">계속 시도하기 (실패해도 괜찮아요)</p>
+                          </div>
+                          <div className="bg-green-50 p-3 rounded-lg text-sm">
+                            <strong className="text-green-900">4단계:</strong>
+                            <p className="text-green-800">작은 성공 축하하기</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+
+              case 7:
+                return (
+                  <div className="space-y-6">
+                    <div className="text-center py-8">
+                      <div className="text-6xl mb-4">🎉</div>
+                      <h2 className="text-3xl font-bold text-indigo-600 mb-2">훌륭해요!</h2>
+                      <p className="text-xl text-gray-600 mb-8">모든 활동을 완료했습니다!</p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-lg">
+                      <h3 className="font-bold text-lg mb-4 text-gray-800">📝 나의 학습 요약</h3>
+                      
+                      <div className="space-y-4 text-sm">
+                        <div className="bg-white p-4 rounded-lg">
+                          <h4 className="font-semibold text-indigo-600 mb-2">나의 벽</h4>
+                          <ul className="list-disc list-inside space-y-1 text-gray-700">
+                            {answers.myWalls.filter(w => w).map((wall, idx) => (
+                              <li key={idx}>{wall}</li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="bg-white p-4 rounded-lg">
+                          <h4 className="font-semibold text-orange-600 mb-2">나의 가치</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {answers.wallValues.filter(v => v).map((value, idx) => (
+                              <span key={idx} className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full">
+                                {value}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="bg-white p-4 rounded-lg">
+                          <h4 className="font-semibold text-pink-600 mb-2">나에게 용기란</h4>
+                          <p className="text-gray-700">{answers.courageDefinition || '(작성하지 않음)'}</p>
+                        </div>
+
+                        <div className="bg-white p-4 rounded-lg">
+                          <h4 className="font-semibold text-green-600 mb-2">나의 실천 방법</h4>
+                          <p className="text-gray-700">{answers.myPractice || '(작성하지 않음)'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 justify-center flex-wrap">
+                      <button
+                        onClick={saveToLocalStorage}
+                        className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition"
+                      >
+                        <lucide.Save size={20} />
+                        저장하기
+                      </button>
+                      <button
+                        onClick={() => window.print()}
+                        className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition"
+                      >
+                        <lucide.Download size={20} />
+                        PDF로 저장
+                      </button>
+                    </div>
+
+                    <div className="text-center text-sm text-gray-600 mt-4">
+                      💾 로컬 저장을 하면 나중에 다시 이어서 할 수 있어요!
+                    </div>
+                  </div>
+                );
+
+              default:
+                return null;
+            }
+          };
+
+          return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
+              <div className="max-w-4xl mx-auto" id="worksheet-content">
+                {/* Header */}
+                <div className="bg-white rounded-t-2xl shadow-lg p-6 mb-1">
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-800">그림책 틸리 학습지</h2>
+                      <p className="text-gray-600 text-sm">용기를 배우는 여정</p>
+                    </div>
+                    {currentStep > 0 && currentStep < 7 && (
+                      <button
+                        onClick={loadFromLocalStorage}
+                        className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                      >
+                        <lucide.RefreshCw size={16} />
+                        불러오기
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="relative">
+                    <div className="flex justify-between mb-2">
+                      {steps.map((step, idx) => (
+                        <div
+                          key={idx}
+                          className={`text-xs ${
+                            idx === currentStep
+                              ? 'text-indigo-600 font-bold'
+                              : idx < currentStep
+                              ? 'text-green-600'
+                              : 'text-gray-400'
+                          }`}
+                        >
+                          {idx + 1}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
+                        style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="bg-white shadow-lg p-8 mb-1">
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-1">
+                      {steps[currentStep].title}
+                    </h2>
+                    <p className="text-gray-600">{steps[currentStep].subtitle}</p>
+                  </div>
+
+                  {renderStepContent()}
+                </div>
+
+                {/* Navigation */}
+                <div className="bg-white rounded-b-2xl shadow-lg p-6 flex justify-between">
+                  <button
+                    onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                    disabled={currentStep === 0}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-lg transition ${
+                      currentStep === 0
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    <lucide.ChevronLeft size={20} />
+                    이전
+                  </button>
+
+                  <button
+                    onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
+                    disabled={currentStep === steps.length - 1}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-lg transition ${
+                      currentStep === steps.length - 1
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    }`}
+                  >
+                    다음
+                    <lucide.ChevronRight size={20} />
+                  </button>
+                </div>
+
+                {/* Footer */}
+                <div className="text-center mt-6 text-sm text-gray-600">
+                  <p>💖 차근차근 생각하며 완성해보세요. 정답은 없어요!</p>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        ReactDOM.render(<TillyWorksheet />, document.getElementById('root'));
+    </script>
+</body>
+</html>
