@@ -1,0 +1,34 @@
+{
+  "name": "tilly-interactive-worksheet",
+  "version": "1.1.0",
+  "description": "그림책 '틸리'를 읽고 용기와 실천에 대해 깊이 생각해보는 웹 기반 학습 도구",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && git add dist && git commit -m 'build: Update production files' && git push"
+  },
+  "keywords": [
+    "education",
+    "tilly",
+    "courage",
+    "interactive",
+    "worksheet",
+    "korean"
+  ],
+  "author": "Yeo Han Ki",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "lucide-react": "^0.292.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.3.0",
+    "vite": "^5.0.0"
+  }
+}
